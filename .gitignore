@@ -1,0 +1,6 @@
+gitignore
+# ESP-IDF 编译输出目录
+build/
+
+# 组件管理器下载的组件（通常无需版本控制）
+managed_components/
