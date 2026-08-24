@@ -24,7 +24,7 @@
 #define LCD_V_RES                   360
 #define LCD_BITS_PER_PIXEL          16
 #define LCD_FB_BYTES_PER_PIXEL      2
-#define LCD_PCLK_HZ                 (10 * 1000 * 1000)
+#define LCD_PCLK_HZ                 (80 * 1000 * 1000)
 #define LCD_BL_DEFAULT_PERCENT      95
 #define LCD_BL_PWM_FREQ_HZ          20000
 #define LCD_BL_PWM_RESOLUTION       LEDC_TIMER_10_BIT
