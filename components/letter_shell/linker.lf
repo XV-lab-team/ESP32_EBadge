@@ -1,0 +1,17 @@
+# Collect letter-shell SHELL_EXPORT_CMD* objects.
+# shell.c (GNUC) reads _shell_command_start / _shell_command_end.
+# KEEP is required because --gc-sections would drop unreferenced commands.
+
+[sections:shell_cmd]
+entries:
+    shellCommand
+
+[scheme:shell_cmd_scheme]
+entries:
+    shell_cmd -> flash_rodata
+
+[mapping:shell_cmd]
+archive: *
+entries:
+    * (shell_cmd_scheme);
+        shell_cmd -> flash_rodata KEEP() ALIGN(4, pre) SURROUND(shell_command)

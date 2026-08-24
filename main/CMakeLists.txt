@@ -1,3 +1,3 @@
-idf_component_register(SRCS "main.c"
+idf_component_register(SRCS "main.c" "lcd_test.c"
                     INCLUDE_DIRS "."
-                    REQUIRES BSP)
+                    REQUIRES BSP letter_shell)

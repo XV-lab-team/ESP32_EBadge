@@ -1,10 +1,13 @@
 #include "lcd.h"
 
+#include <string.h>
+
 #include "driver/ledc.h"
 #include "driver/spi_master.h"
 #include "esp_attr.h"
 #include "esp_check.h"
 #include "esp_heap_caps.h"
+#include "esp_lcd_panel_commands.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_st77916.h"
@@ -16,8 +19,8 @@
 
 static const char *TAG = "lcd";
 
-/* 色条测试每次 20 行一次 RAMWR，便于看出是只写了顶上一小条还是整条都在 */
-#define LCD_FILL_LINES              20
+/* 每次最多 20 行一次 RAMWR，缓冲大小和 lcd.h 的 LCD_DRAW_ROWS_MAX 对齐 */
+#define LCD_FILL_LINES              LCD_DRAW_ROWS_MAX
 #define LCD_MAX_TRANSFER_SZ         (LCD_H_RES * 80 * LCD_FB_BYTES_PER_PIXEL)
 #define LCD_COLOR_DMA_TIMEOUT_MS    1000
 
@@ -30,6 +33,142 @@ static esp_lcd_panel_handle_t s_panel = NULL;
 static uint16_t *s_fill_buf = NULL;
 static SemaphoreHandle_t s_color_done = NULL;
 static bool s_ready = false;
+
+static int lcd_qspi_cmd(uint8_t cmd)
+{
+    return (int)((0x02u << 24) | ((uint32_t)cmd << 8));
+}
+
+static int lcd_qspi_rd_cmd(uint8_t cmd)
+{
+    return (int)((0x0Bu << 24) | ((uint32_t)cmd << 8));
+}
+
+static esp_err_t lcd_tx_reg(uint8_t cmd, const uint8_t *data, size_t len)
+{
+    return esp_lcd_panel_io_tx_param(s_io, lcd_qspi_cmd(cmd), data, len);
+}
+
+static esp_err_t lcd_rx_reg(uint8_t cmd, void *data, size_t len)
+{
+    return esp_lcd_panel_io_rx_param(s_io, lcd_qspi_rd_cmd(cmd), data, len);
+}
+
+static esp_err_t lcd_read_and_log(const char *name, uint8_t cmd, size_t n)
+{
+    uint8_t buf[8] = {0};
+    if (n > sizeof(buf)) {
+        n = sizeof(buf);
+    }
+    esp_err_t err = lcd_rx_reg(cmd, buf, n);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "读 %s (0x%02X) 失败: %s", name, cmd, esp_err_to_name(err));
+        return err;
+    }
+    ESP_LOGI(TAG, "%s (0x%02X): %02X %02X %02X %02X %02X %02X %02X %02X",
+             name, cmd, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+    if (cmd == LCD_CMD_RDDPM) {
+        /* 实验 O 的 RAMRD dummy 是 0x7F；状态寄存器同样可能首字节是 dummy */
+        const uint8_t v = (buf[0] == 0x7F) ? buf[1] : buf[0];
+        ESP_LOGI(TAG, "RDDPM 按 0x%02X 解码: booster=%u idle=%u partial=%u slpout=%u dispon=%u invert=%u",
+                 v,
+                 (unsigned)((v >> 7) & 1u),
+                 (unsigned)((v >> 6) & 1u),
+                 (unsigned)((v >> 5) & 1u),
+                 (unsigned)((v >> 4) & 1u),
+                 (unsigned)((v >> 3) & 1u),
+                 (unsigned)((v >> 2) & 1u));
+    }
+    return ESP_OK;
+}
+
+/* 寄存器窗口是闭区间；init 里 0x4C kick 曾把 0x2B 设成 y=360 */
+static esp_err_t lcd_set_addr_win(int x0, int y0, int x1, int y1)
+{
+    const uint8_t caset[] = {
+        (uint8_t)((x0 >> 8) & 0xFF), (uint8_t)(x0 & 0xFF),
+        (uint8_t)((x1 >> 8) & 0xFF), (uint8_t)(x1 & 0xFF),
+    };
+    const uint8_t raset[] = {
+        (uint8_t)((y0 >> 8) & 0xFF), (uint8_t)(y0 & 0xFF),
+        (uint8_t)((y1 >> 8) & 0xFF), (uint8_t)(y1 & 0xFF),
+    };
+    esp_err_t err = lcd_tx_reg(LCD_CMD_CASET, caset, sizeof(caset));
+    if (err != ESP_OK) {
+        return err;
+    }
+    return lcd_tx_reg(LCD_CMD_RASET, raset, sizeof(raset));
+}
+
+static esp_err_t lcd_restore_full_window(void)
+{
+    return lcd_set_addr_win(0, 0, LCD_H_RES - 1, LCD_V_RES - 1);
+}
+
+/* 像素走和 init 一样的 opcode 0x02 / tx_param，不用 tx_color 的四线 QIO */
+static esp_err_t lcd_write_ram_1wire(const void *data, size_t len)
+{
+    return esp_lcd_panel_io_tx_param(s_io, lcd_qspi_cmd(LCD_CMD_RAMWR), data, len);
+}
+
+static esp_err_t lcd_fill_rect_1wire(int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b)
+{
+    if (!s_ready || s_io == NULL || s_fill_buf == NULL) {
+        ESP_LOGE(TAG, "lcd_fill_rect_1wire: 尚未初始化");
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (w <= 0 || h <= 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (x < 0) {
+        w += x;
+        x = 0;
+    }
+    if (y < 0) {
+        h += y;
+        y = 0;
+    }
+    if (x >= LCD_H_RES || y >= LCD_V_RES || w <= 0 || h <= 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (x + w > LCD_H_RES) {
+        w = LCD_H_RES - x;
+    }
+    if (y + h > LCD_V_RES) {
+        h = LCD_V_RES - y;
+    }
+
+    const uint16_t rgb565 = LCD_COLOR_RGB565(r, g, b);
+    const uint16_t color_be = __builtin_bswap16(rgb565);
+
+    ESP_LOGI(TAG, "一线 0x2C 填充 (%d,%d) %dx%d RGB888=%u,%u,%u RGB565=0x%04X 总线=0x%04X",
+             x, y, w, h, r, g, b, rgb565, color_be);
+
+    int y0 = y;
+    const int y1 = y + h;
+    while (y0 < y1) {
+        int rows = y1 - y0;
+        if (rows > LCD_FILL_LINES) {
+            rows = LCD_FILL_LINES;
+        }
+        const size_t pix = (size_t)w * (size_t)rows;
+        for (size_t i = 0; i < pix; i++) {
+            s_fill_buf[i] = color_be;
+        }
+        esp_err_t err = lcd_set_addr_win(x, y0, x + w - 1, y0 + rows - 1);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "一线设窗口失败: %s", esp_err_to_name(err));
+            return err;
+        }
+        err = lcd_write_ram_1wire(s_fill_buf, pix * LCD_FB_BYTES_PER_PIXEL);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "一线 RAMWR 失败: %s", esp_err_to_name(err));
+            return err;
+        }
+        y0 += rows;
+    }
+    return ESP_OK;
+}
 
 static bool IRAM_ATTR lcd_on_color_trans_done(esp_lcd_panel_io_handle_t panel_io,
                                               esp_lcd_panel_io_event_data_t *edata,
@@ -201,14 +340,14 @@ esp_err_t lcd_init(void)
         return err;
     }
 
-    ESP_LOGI(TAG, "发送 1.8 寸 ST77916 初始化 (0xF0=0x08, 非 VoCat 1.5 寸表)");
+    ESP_LOGI(TAG, "发送 HD18004C18 init (0xF0=0x28, 0x76=0x0F, B0=0x52, 栅极 0x48+行号 0x04, 非 VoCat/180/IDF)");
     err = esp_lcd_panel_init(s_panel);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_lcd_panel_init 失败: %s", esp_err_to_name(err));
         return err;
     }
 
-    /* 1.8 寸序列已含 0x21 invert 和 0x29 DISPON */
+    /* HD18004 表已含 0x21 invert 和 0x29 DISPON */
     err = esp_lcd_panel_invert_color(s_panel, true);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_lcd_panel_invert_color 失败: %s", esp_err_to_name(err));
@@ -221,6 +360,13 @@ esp_err_t lcd_init(void)
         return err;
     }
     ESP_LOGI(TAG, "显示已打开");
+
+    ESP_LOGI(TAG, "init 后重设 CASET/RASET 0-359, 避免 0x4C kick 把窗口留在 y=360");
+    err = lcd_restore_full_window();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "恢复全屏窗口失败: %s", esp_err_to_name(err));
+        return err;
+    }
 
     s_fill_buf = heap_caps_malloc(LCD_H_RES * LCD_FILL_LINES * LCD_FB_BYTES_PER_PIXEL, MALLOC_CAP_DMA);
     if (s_fill_buf == NULL) {
@@ -307,63 +453,135 @@ esp_err_t lcd_fill_color(uint8_t r, uint8_t g, uint8_t b)
     return lcd_fill_rect(0, 0, LCD_H_RES, LCD_V_RES, r, g, b);
 }
 
+esp_err_t lcd_prepare_1wire(void)
+{
+    if (!s_ready || s_panel == NULL || s_io == NULL) {
+        ESP_LOGE(TAG, "lcd_prepare_1wire: 尚未初始化");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    esp_err_t err = esp_lcd_panel_invert_color(s_panel, true);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "lcd_prepare_1wire invert on 失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    const uint8_t colmod55 = 0x55;
+    err = lcd_tx_reg(LCD_CMD_COLMOD, &colmod55, 1);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "lcd_prepare_1wire 写 COLMOD 0x55 失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    return lcd_restore_full_window();
+}
+
+esp_err_t lcd_fill_1wire(uint8_t r, uint8_t g, uint8_t b)
+{
+    esp_err_t err = lcd_prepare_1wire();
+    if (err != ESP_OK) {
+        return err;
+    }
+    return lcd_fill_rect_1wire(0, 0, LCD_H_RES, LCD_V_RES, r, g, b);
+}
+
+static esp_err_t lcd_write_rows_1wire(int y, int rows)
+{
+    esp_err_t err = lcd_set_addr_win(0, y, LCD_H_RES - 1, y + rows - 1);
+    if (err != ESP_OK) {
+        return err;
+    }
+    return lcd_write_ram_1wire(s_fill_buf,
+                               (size_t)LCD_H_RES * (size_t)rows * LCD_FB_BYTES_PER_PIXEL);
+}
+
+esp_err_t lcd_draw_rgb565_1wire(int y, int rows, const uint16_t *rgb565_be)
+{
+    if (!s_ready || s_io == NULL || s_fill_buf == NULL) {
+        ESP_LOGE(TAG, "lcd_draw_rgb565_1wire: 尚未初始化");
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (rgb565_be == NULL || rows <= 0 || y < 0 || y >= LCD_V_RES) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (y + rows > LCD_V_RES) {
+        rows = LCD_V_RES - y;
+    }
+    if (rows > LCD_FILL_LINES) {
+        ESP_LOGE(TAG, "lcd_draw_rgb565_1wire: rows=%d 超过 %d", rows, LCD_FILL_LINES);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    const size_t pix = (size_t)LCD_H_RES * (size_t)rows;
+    memcpy(s_fill_buf, rgb565_be, pix * LCD_FB_BYTES_PER_PIXEL);
+    return lcd_write_rows_1wire(y, rows);
+}
+
 esp_err_t lcd_draw_test_pattern(void)
 {
-    const int rows = 80;
-    const int y0 = LCD_V_RES - rows; /* 280：故意写在底部，用来分辨是第一行还是最后一行 */
-    const size_t pix = (size_t)LCD_H_RES * (size_t)rows;
-    uint16_t *fb = NULL;
+    uint8_t ram[32] = {0};
 
-    if (!s_ready || s_panel == NULL) {
+    if (!s_ready || s_io == NULL || s_panel == NULL) {
         ESP_LOGE(TAG, "lcd_draw_test_pattern: 尚未初始化");
         return ESP_ERR_INVALID_STATE;
     }
 
-    fb = heap_caps_malloc(pix * LCD_FB_BYTES_PER_PIXEL, MALLOC_CAP_DMA);
-    if (fb == NULL) {
-        ESP_LOGE(TAG, "oneshot 申请 %u 字节 DMA 缓冲失败", (unsigned)(pix * LCD_FB_BYTES_PER_PIXEL));
-        return ESP_ERR_NO_MEM;
-    }
+    ESP_LOGI(TAG, "LCD_FW invert-on-v1: HD18004C18 + invert on + 一线 16-bit 洋红底 + y=176 绿横线");
 
-    const uint16_t red = __builtin_bswap16(LCD_COLOR_RGB565(255, 0, 0));
-    const uint16_t green = __builtin_bswap16(LCD_COLOR_RGB565(0, 255, 0));
-    const uint16_t blue = __builtin_bswap16(LCD_COLOR_RGB565(0, 0, 255));
-    const uint16_t white = __builtin_bswap16(LCD_COLOR_RGB565(255, 255, 255));
-
-    for (int y = 0; y < rows; y++) {
-        uint16_t color;
-        if (y < 20) {
-            color = red;
-        } else if (y < 40) {
-            color = green;
-        } else if (y < 60) {
-            color = blue;
-        } else {
-            color = white;
-        }
-        for (int x = 0; x < LCD_H_RES; x++) {
-            fb[y * LCD_H_RES + x] = color;
-        }
-    }
-
-    ESP_LOGI(TAG, "LCD_FW coord-oneshot-v1: 一次 RAMWR 写 y=%d..%d (底部80行) 红/绿/蓝/白各20行",
-             y0, LCD_V_RES - 1);
-    ESP_LOGI(TAG, "看位置: 色带在底部=Y有效; 色带仍在顶部=RASET无效; 仍半黑半白=没烧到这版");
-
-    esp_err_t err = esp_lcd_panel_draw_bitmap(s_panel, 0, y0, LCD_H_RES, LCD_V_RES, fb);
+    esp_err_t err = esp_lcd_panel_invert_color(s_panel, true);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "oneshot draw_bitmap 失败: %s", esp_err_to_name(err));
-        heap_caps_free(fb);
-        return err;
-    }
-    err = lcd_wait_color_dma();
-    heap_caps_free(fb);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "oneshot DMA 超时");
+        ESP_LOGE(TAG, "invert on 失败: %s", esp_err_to_name(err));
         return err;
     }
 
-    ESP_LOGI(TAG, "LCD_FW coord-oneshot-v1 发送完成");
+    err = lcd_restore_full_window();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "恢复全屏窗口失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    const uint8_t colmod55 = 0x55;
+    err = lcd_tx_reg(LCD_CMD_COLMOD, &colmod55, 1);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "写 COLMOD 0x55 失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    (void)lcd_read_and_log("RDDID", LCD_CMD_RDDID, 8);
+    (void)lcd_read_and_log("RDDPM", LCD_CMD_RDDPM, 8);
+    (void)lcd_read_and_log("MADCTL", LCD_CMD_RDD_MADCTL, 8);
+    (void)lcd_read_and_log("COLMOD", LCD_CMD_RDD_COLMOD, 8);
+
+    err = lcd_fill_rect_1wire(0, 0, LCD_H_RES, LCD_V_RES, 255, 0, 255);
+    if (err != ESP_OK) {
+        return err;
+    }
+    /* 圆屏直径附近，8 行厚；洋红/绿和上一版青/红差开，避免 GRAM 残留误判 */
+    err = lcd_fill_rect_1wire(0, 176, LCD_H_RES, 8, 0, 255, 0);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    err = lcd_set_addr_win(0, 180, 7, 180);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "RAMRD 前设窗口失败: %s", esp_err_to_name(err));
+        return err;
+    }
+    err = lcd_rx_reg(LCD_CMD_RAMRD, ram, sizeof(ram));
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "RAMRD 0x2E 失败: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "RAMRD y=180 前32字节 (绿横线 RGB565=0x07E0 总线 07 E0; 首字节可能 dummy):");
+        ESP_LOG_BUFFER_HEX(TAG, ram, sizeof(ram));
+    }
+
+    err = lcd_restore_full_window();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "读回后恢复全屏窗口失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    ESP_LOGI(TAG, "LCD_FW invert-on-v1 完成: 预期整圆洋红、中间绿线");
     return ESP_OK;
 }
 

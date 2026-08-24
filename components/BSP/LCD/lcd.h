@@ -33,10 +33,15 @@
 #define LCD_COLOR_RGB565(r, g, b) \
     ((uint16_t)((((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | (((b) & 0xF8) >> 3)))
 
+#define LCD_DRAW_ROWS_MAX           20
+
 esp_err_t lcd_init(void);
 esp_err_t lcd_set_backlight(uint8_t percent);
 esp_err_t lcd_fill_rect(int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b);
 esp_err_t lcd_fill_color(uint8_t r, uint8_t g, uint8_t b);
+esp_err_t lcd_prepare_1wire(void);
+esp_err_t lcd_fill_1wire(uint8_t r, uint8_t g, uint8_t b);
+esp_err_t lcd_draw_rgb565_1wire(int y, int rows, const uint16_t *rgb565_be);
 esp_err_t lcd_draw_test_pattern(void);
 esp_lcd_panel_handle_t lcd_get_panel(void);
 
