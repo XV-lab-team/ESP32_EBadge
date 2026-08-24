@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flash 下载工具用户指南 - ESP32-S3 -  &mdash; ESP 测试工具 latest 文档</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=a60756f2" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=949a1ff5" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=851bd809" />
+
+  
+    <link rel="canonical" href="https://docs.espressif.com/projects/esp-test-tools/zh_CN/latest/esp32s3/production_stage/tools/flash_download_tool.html" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=1f19b280"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../_static/copybutton.js?v=ff8fa330"></script>
+        <script src="../../_static/translations.js?v=beaddf03"></script>
+        <script src="https://wavedrom.com/skins/default.js"></script>
+        <script src="https://wavedrom.com/wavedrom.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+
+    
+        
+
+    <script type="text/javascript">
+        DOCUMENTATION_OPTIONS.PAGENAME = 'production_stage/tools/flash_download_tool';
+        DOCUMENTATION_OPTIONS.PROJECT_SLUG = 'esp-test-tools';
+        DOCUMENTATION_OPTIONS.LATEST_BRANCH_NAME = 'master';
+        DOCUMENTATION_OPTIONS.VERSIONS_URL = '../.././_static/js/docs_version.js';
+        DOCUMENTATION_OPTIONS.LANGUAGES = ["en", "zh_CN"];
+        DOCUMENTATION_OPTIONS.IDF_TARGET = 'esp32s3';
+        DOCUMENTATION_OPTIONS.HAS_IDF_TARGETS = ["esp8266", "esp32", "esp32c2", "esp32c3", "esp32c6", "esp32s2", "esp32s3", "esp32h2", "esp32c5", "esp32c61", "esp32p4"]
+        DOCUMENTATION_OPTIONS.RELEASE = 'latest';
+        DOCUMENTATION_OPTIONS.LANGUAGE_URL = 'zh_CN';
+
+    </script>
+
+    <script type="text/javascript" src="../.././_static/js/docs_version.js"></script>
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" />
+    <link rel="copyright" title="版权所有" href="../../copyright.html" />
+    <link rel="next" title="乐鑫产测指南" href="esp_production_testing_guide.html" />
+    <link rel="prev" title="生产阶段" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ESP 测试工具
+              <img src="../../_static/espressif-logo.svg" class="logo" alt="Logo"/>
+          </a>
+
+          
+            <div class="selectors">
+              <select id="target-select" style="width: 150px;" hidden>
+                <option value="" disabled selected>Choose target...</option>
+              </select>
+            </div>
+          
+
+          <div class="selectors">
+            <select id="version-select" style="width: 150px;" hidden>
+              <option value="" disabled selected>Choose version...</option>
+            </select>
+          </div>
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="搜索文档" aria-label="搜索文档" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="导航菜单">
+              <p class="caption" role="heading"><span class="caption-text">研发阶段</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../development_stage/index.html">简介</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../development_stage/rf_test_guide/rf_test_guide.html">RF 测试指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../development_stage/rf_test_items/index.html">RF 测试项目</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../development_stage/rf_test_certification/index.html">RF 测试认证</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../development_stage/wfa_certification_test/wfa_certification_test.html">WFA 认证与测试指南</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">生产阶段</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">简介</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Flash 下载工具</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">准备工作</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">工具介绍</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">界面入口</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spidownload">SPIDownload 界面</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#factorymultidownload">FactoryMultiDownload 界面</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chipinfodump">chipInfoDump 界面</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">下载示例</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id5">常规烧录</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id6">加密烧录</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">版本发布说明</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="esp_production_testing_guide.html">乐鑫产测指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../instructions/test_fixture_mfg_inst.html">模组治具制作规范</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matter_qr_code_generator.html">Matter QR 二维码生成工具</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">其他</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../faq/index.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resources.html">相关文档和资源</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../copyright.html">免责声明和版权公告</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="移动版导航菜单" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ESP 测试工具</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="页面导航">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Flash 下载工具用户指南</li>
+    <style>
+        .download-pdf {
+            float: right;
+            margin-right: 20px; /* Adjust margin here */
+        }
+    </style>
+    <a href="../../esp-test-tools-zh_CN-master-esp32s3.pdf" class="download-pdf fa fa-file-pdf-o"> 下载 PDF</a>
+
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="flash">
+<h1>Flash 下载工具用户指南<a class="headerlink" href="#flash" title="此标题的永久链接"></a></h1>
+<p><a class="reference external" href="../../../../../en/latest/esp32s3/production_stage/tools/flash_download_tool.html">[English]</a></p>
+<section id="id1">
+<h2>准备工作<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h2>
+<p>乐鑫模组在进行 flash 下载时所需的软、硬件资源如下所示。</p>
+<ul class="simple">
+<li><p>硬件设备：</p>
+<ul>
+<li><p>1 x 待下载设备</p></li>
+<li><p>1 x PC（操作系统支持 Windows 7 [64 位]、Windows 10）</p></li>
+</ul>
+</li>
+<li><p>软件：</p>
+<ul>
+<li><p><a class="reference download external" download="" href="https://dl.espressif.com/public/flash_download_tool.zip"><code class="xref download docutils literal notranslate"><span class="pre">Flash</span> <span class="pre">下载工具</span></code></a></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id2">
+<h2>工具介绍<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
+<section id="id3">
+<h3>界面入口<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h3>
+<p>打开 Flash 下载工具，双击 <code class="docutils literal notranslate"><span class="pre">.exe</span></code> 文件后进入工具主界面，如下图所示：</p>
+<figure class="align-center" id="id8">
+<a class="reference internal image-reference" href="../../_images/main_interface.jpg"><img alt="../../_images/main_interface.jpg" src="../../_images/main_interface.jpg" style="width: 194.4px; height: 185.4px;" /></a>
+<figcaption>
+<p><span class="caption-text">Flash Download Tool 主界面</span><a class="headerlink" href="#id8" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ChipType</span></code>：芯片类型，根据所用产品类型选择</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WorkMode</span></code>：软件模式，当前有 <code class="docutils literal notranslate"><span class="pre">Develop</span></code> 模式与 <code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式，区别如下：</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Develop</span></code> 模式使用固件绝对路径，只支持单片产品烧录。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式使用相对路径，建议将待烧录固件放在与 <code class="docutils literal notranslate"><span class="pre">.exe</span></code> 文件同级的 bin 文件夹中，配置后关闭时会自动保存在本地。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式打开时，界面锁定，需点击 <code class="docutils literal notranslate"><span class="pre">LockSettings</span></code> 按钮使能编辑。防止鼠标误操作。</p></li>
+</ul>
+</li>
+</ul>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LoadMode</span></code>：下载接口支持 <code class="docutils literal notranslate"><span class="pre">UART</span></code> 和 <code class="docutils literal notranslate"><span class="pre">USB</span></code> 两种方式。</p></li>
+</ul>
+</section>
+<section id="spidownload">
+<h3>SPIDownload 界面<a class="headerlink" href="#spidownload" title="此标题的永久链接"></a></h3>
+<p>以下是配置说明：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Path</span> <span class="pre">Config</span></code> 包含固件加载路径，固件下载地址，以 16 进制格式填写，比如 0x0。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">Flash</span> <span class="pre">Config</span></code></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">SPEED</span></code>：SPI 启动速率</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">MODE</span></code>：SPI 启动模式</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DETECTED</span> <span class="pre">INFO</span></code>：自动检测到的 flash 及晶振信息</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DoNotChgBin</span></code>：若使能，则按照 bin 文件原始内容烧录。若不使能，按照界面的 <code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">SPEED</span></code>、<code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">MODE</span></code> 配置更新并烧录。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CombineBin</span></code> 按钮：可将 <code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Path</span> <span class="pre">Config</span></code> 中选中的多个固件打包成一个固件。若使能 <code class="docutils literal notranslate"><span class="pre">DoNotChgBin</span></code>，则按原始固件打包。若不使能 <code class="docutils literal notranslate"><span class="pre">DoNotChgBin</span></code>，则按界面 <code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">SPEED</span></code>、<code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">MODE</span></code> 配置打包固件。固件之间非数据区，会以 0xff 进行填充。打包的固件将保存为 ./combine/target.bin，每次点击覆盖前次。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Default</span></code> 按钮：将界面 SPI 配置均还原成默认值。</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Panel</span></code></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">START</span></code>：开始按键</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">STOP</span></code>：停止按键</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ERASE</span></code>：整个 flash 擦除</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">COM</span></code>：下载串口</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BAUD</span></code>：下载波特率</p></li>
+</ul>
+</li>
+</ul>
+<figure class="align-center" id="id9">
+<a class="reference internal image-reference" href="../../_images/spidownload_interface.jpg"><img alt="../../_images/spidownload_interface.jpg" src="../../_images/spidownload_interface.jpg" style="width: 339.20000000000005px; height: 518.4px;" /></a>
+<figcaption>
+<p><span class="caption-text">SPIDownload 界面</span><a class="headerlink" href="#id9" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<ul class="simple">
+<li><p>工具版本 &gt;= 3.9.10 时，默认不再允许更改 <code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">SPEED</span></code>、<code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">MODE</span></code>，以上参数与固件编译配置保持一致。</p></li>
+</ul>
+</div>
+</section>
+<section id="factorymultidownload">
+<h3>FactoryMultiDownload 界面<a class="headerlink" href="#factorymultidownload" title="此标题的永久链接"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式使用相对路径，默认从工具目录的 bin 路径下加载待烧录固件。而 <code class="docutils literal notranslate"><span class="pre">Develop</span></code> 模式使用绝对路径。<code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式的优点：只要将待烧录固件拷入工具目录的 bin 路径下，即可在工厂电脑间拷贝，不会出现路径问题。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式打开时，工具启动默认使能界面上 <code class="docutils literal notranslate"><span class="pre">LockSettings</span></code>。<code class="docutils literal notranslate"><span class="pre">LockSettings</span></code> 在使能的情况下，固件路径及 <code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">flash</span> <span class="pre">config</span></code> 均无法配置，防止产线人员误触导致配置错误。（工厂管理人员需要配置时，可点击 <code class="docutils literal notranslate"><span class="pre">LockSettings</span></code> 进行解锁）</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Factory</span></code> 模式下，可点击 <code class="docutils literal notranslate"><span class="pre">CRC32</span> <span class="pre">cal</span></code> 按钮，根据待烧录的所有文件内容及烧录地址生成一个校验值，产线可根据此校验值来确认烧录的文件及配置是否正确。</p></li>
+</ul>
+<figure class="align-center" id="id10">
+<a class="reference internal image-reference" href="../../_images/factorymultidownload_interface.png"><img alt="../../_images/factorymultidownload_interface.png" src="../../_images/factorymultidownload_interface.png" style="width: 806.3000000000001px; height: 537.35px;" /></a>
+<figcaption>
+<p><span class="caption-text">FactoryMultiDownload 界面</span><a class="headerlink" href="#id10" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<p>FactoryMultiDownload 界面的 <code class="docutils literal notranslate"><span class="pre">download</span> <span class="pre">path</span> <span class="pre">config</span></code> 及 <code class="docutils literal notranslate"><span class="pre">SPI</span> <span class="pre">flash</span> <span class="pre">config</span></code> 配置与 SPIDownload 界面基本相同，请参考 <a class="reference internal" href="#spidownload">SPIDownload 界面</a>，并注意单独配置每一路的串口号和波特率。</p>
+</section>
+<section id="chipinfodump">
+<h3>chipInfoDump 界面<a class="headerlink" href="#chipinfodump" title="此标题的永久链接"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Device</span></code> 选择对应设备的串口号和通信波特率。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Read</span> <span class="pre">Flash</span></code> 选择从 flash 里读取内容的首地址及要读取内容的大小，此项仅读取 flash 时需要设置。</p></li>
+</ul>
+<figure class="align-center" id="id11">
+<a class="reference internal image-reference" href="../../_images/chip_info_dump.png"><img alt="../../_images/chip_info_dump.png" src="../../_images/chip_info_dump.png" style="width: 400.40000000000003px; height: 441.1px;" /></a>
+<figcaption>
+<p><span class="caption-text">chipInfoDump 界面</span><a class="headerlink" href="#id11" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<ul class="simple">
+<li><p>功能说明</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Chip</span> <span class="pre">Info</span></code>：读取芯片型号、flash ID 以及 flash 状态寄存器值，读取内容直接显示在软件界面上。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Read</span> <span class="pre">Flash</span></code>：读取 flash 存储的数据。读出的内容会存储在生成的 bin 文件中，bin 文件名称以“芯片 MAC + 读取起始地址 + 读取数据长度 + 读取时间”的格式命名。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Read</span> <span class="pre">Efuse</span></code>：读取芯片 eFuse 的内容，功能和 esptool summary 相同，读出内容存储在生成的文本文件中，文件以“芯片 MAC + 读取时间”的格式命名。</p></li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<ul class="simple">
+<li><p>以上读取功能的支持需要产品启动后进入下载模式。</p></li>
+<li><p>工具版本 &gt;= 3.9.8</p></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="id4">
+<h2>下载示例<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<p>本章节主以 ESP32 系列为例，演示如何进行常规烧录和加密烧录。目前，ESP32-S3 支持常规烧录与加密烧录。</p>
+<section id="id5">
+<h3>常规烧录<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h3>
+<ol class="arabic simple">
+<li><p>将 GPIO0 管脚下拉，使设备进入下载模式</p></li>
+</ol>
+<ol class="arabic simple" start="2">
+<li><p>打开下载工具，<code class="docutils literal notranslate"><span class="pre">ChipType</span></code> 选择 <code class="docutils literal notranslate"><span class="pre">ESP32</span></code>，<code class="docutils literal notranslate"><span class="pre">WorkMode</span></code> 选择 <code class="docutils literal notranslate"><span class="pre">Develop</span></code>，<code class="docutils literal notranslate"><span class="pre">LoadMode</span></code> 选择 <code class="docutils literal notranslate"><span class="pre">UART</span></code>，点击 <code class="docutils literal notranslate"><span class="pre">OK</span></code>，如下图所示。</p></li>
+</ol>
+<figure class="align-center" id="id12">
+<a class="reference internal image-reference" href="../../_images/device_selection.jpg"><img alt="../../_images/device_selection.jpg" src="../../_images/device_selection.jpg" style="width: 198.0px; height: 162.0px;" /></a>
+<figcaption>
+<p><span class="caption-text">设备选择 — ESP32 Download Tool</span><a class="headerlink" href="#id12" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<ol class="arabic simple" start="3">
+<li><p>进入下载页面，填入需要烧录的 bin 文件，和对应的烧录地址，勾选 bin 文件前面的复选框，并根据自己实际需求填入 <code class="docutils literal notranslate"><span class="pre">COM</span></code> 及 <code class="docutils literal notranslate"><span class="pre">BAUD</span></code>。</p></li>
+<li><p>点击 <code class="docutils literal notranslate"><span class="pre">START</span></code> 开始下载。下载过程中，下载工具会读取 flash 的信息和芯片的 MAC 地址。</p></li>
+<li><p>下载完成后，下载工具的界面如下图所示。</p></li>
+</ol>
+<figure class="align-center" id="id13">
+<a class="reference internal image-reference" href="../../_images/download_finish_interface.jpg"><img alt="../../_images/download_finish_interface.jpg" src="../../_images/download_finish_interface.jpg" style="width: 381.6px; height: 581.4px;" /></a>
+<figcaption>
+<p><span class="caption-text">下载完成界面</span><a class="headerlink" href="#id13" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="id6">
+<h3>加密烧录<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h3>
+<p>加密烧录流程为：</p>
+<ol class="arabic simple">
+<li><p>Flash 下载工具将明文固件烧录进芯片</p></li>
+<li><p>芯片使用 eFuse 中的密钥对该明文固件进行加密，然后将加密后的固件写入 flash。</p></li>
+<li><p>若 eFuse 中无 flash 加密密钥，下载工具会自动在 PC 端随机生成密钥并烧录进 eFuse，客户也可以自行准备加密密钥；若 eFuse 中已有 flash 加密密钥，则跳过密钥的生成及密钥烧录过程。</p></li>
+</ol>
+<p>以下为配置加密功能的步骤：</p>
+<ol class="arabic simple">
+<li><p>打开配置文件 ./configure/[chip_name]/security.conf，若首次打开时无此文件，可关闭软件后再次打开即可</p></li>
+<li><p>修改相关配置项</p></li>
+</ol>
+<p>以下为配置项的说明，其中等号后面的内容为配置项的默认值，<code class="docutils literal notranslate"><span class="pre">True</span></code> 表示使能，<code class="docutils literal notranslate"><span class="pre">False</span></code> 表示不使能。</p>
+<ul>
+<li><p><strong>[SECURE BOOT]</strong> 此配置项为开启 secure boot 时需要配置</p>
+<ul class="simple">
+<li><p><strong>secure_boot_en = False</strong> （配置是否使能 secure boot）</p></li>
+</ul>
+<ul class="simple">
+<li><p><strong>public_key_digest_path = .\secure\public_key_digest.bin</strong>  （公钥摘要文件路径，生成方式: <code class="docutils literal notranslate"><span class="pre">espsecure</span> <span class="pre">digest_sbv2_public_key</span> <span class="pre">-k</span> <span class="pre">pem.pem</span> <span class="pre">-o</span> <span class="pre">public_key_digest.bin</span></code>; <code class="docutils literal notranslate"><span class="pre">.pem</span></code> 文件是编译时指定的私钥文件）</p></li>
+<li><p><strong>public_key_digest_block_index = 0</strong> （eFuse 中存储公钥摘要文件的 block 索引，默认 0）</p></li>
+</ul>
+</li>
+<li><p><strong>[FLASH ENCRYPTION]</strong> 此配置项为开启 flash 加密时需要配置</p>
+<ul class="simple">
+<li><p><strong>flash_encryption_en = False</strong> （配置是否开启 flash 加密功能）</p></li>
+</ul>
+<ul class="simple">
+<li><p><strong>reserved_burn_times = 1</strong> （配置预留烧录次数，可选值为 0、1）</p></li>
+</ul>
+<ul class="simple">
+<li><p><strong>flash_encrypt_key_block_index = 0</strong> （配置加密密钥在 block_key 中的索引值，默认为 0，可选范围 0~4。）更多信息请参考 <a class="reference external" href="https://www.espressif.com/sites/default/files/documentation/esp32-s3_technical_reference_manual_cn.pdf">技术参考手册 (PDF)</a> &gt; 章节 eFuse 控制器</p></li>
+</ul>
+</li>
+<li><p><strong>[SECURE OTHER CONFIG]</strong> 其他安全配置项：</p>
+<ul class="simple">
+<li><p><strong>flash_encryption_use_customer_key_enable = False</strong> （配置是否使能客户指定的加密密钥）</p></li>
+<li><p><strong>flash_encryption_use_customer_key_path = .\secure\flash_encrypt_key.bin</strong> （若使用客户指定的密钥，这里需要指定密钥路径）</p></li>
+<li><p><strong>flash_force_write_enable = False</strong> （配置烧录时是否跳过加密和安全启动检查。此时若对已经开启 flash 加密或安全启动的产品烧录时会弹窗报错）</p></li>
+</ul>
+</li>
+<li><p><strong>[FLASH ENCRYPTION KEYS LOCAL SAVE]</strong> 此配置为是否将加密用的密钥文件保存在本地，默认为 False</p>
+<ul class="simple">
+<li><p><strong>keys_save_enable = False</strong> （配置是否保存密钥）</p></li>
+<li><p><strong>encrypt_keys_enable = False</strong> （配置是否对保存在本地的密钥加密）</p></li>
+<li><p><strong>encrypt_keys_aeskey_path =</strong> （若对本地保存的密钥加密，请在此处填入密钥文件，比如 <strong>./my_aeskey.bin</strong>）</p></li>
+</ul>
+</li>
+<li><p><strong>[ESP32* EFUSE BIT CONFIG]</strong> 此配置为开启 flash 加密时，是否配置加密项，默认为 False。</p></li>
+</ul>
+<table class="docutils align-default" id="id14">
+<caption><span class="caption-text">[ESP32-S* DISABLE FUNC] 配置项</span><a class="headerlink" href="#id14" title="此表格的永久链接"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>[ESP32-S* DISABLE FUNC] 配置项</p></th>
+<th class="head"><p>描述</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>dis_usb_jtag = False</p></td>
+<td><p>配置是否禁用 USB JTAG</p></td>
+</tr>
+<tr class="row-odd"><td><p>hard_dis_jtag = False</p></td>
+<td><p>配置是否硬禁用 JTAG</p></td>
+</tr>
+<tr class="row-even"><td><p>soft_dis_jtag = 7</p></td>
+<td><p>配置是否软禁用 JTAG</p></td>
+</tr>
+<tr class="row-odd"><td><p>dis_usb_otg_download_mode = False</p></td>
+<td><p>配置是否禁用 USB OTG 下载</p></td>
+</tr>
+<tr class="row-even"><td><p>dis_direct_boot = False</p></td>
+<td><p>配置是否禁用直接启动</p></td>
+</tr>
+<tr class="row-odd"><td><p>dis_download_icache = False</p></td>
+<td><p>配置是否在下载模式下关闭指令 cache</p></td>
+</tr>
+<tr class="row-even"><td><p>dis_download_dcache = False</p></td>
+<td><p>配置是否在下载模式下关闭数据 cache</p></td>
+</tr>
+<tr class="row-odd"><td><p>dis_download_manual_encrypt = False</p></td>
+<td><p>配置是否软禁用手动加密</p></td>
+</tr>
+</tbody>
+</table>
+<p>运行工具时会提示如下内容，需核对是否正确。下图为同时开启 flash 加密和安全启动的提示信息：</p>
+<figure class="align-center" id="id15">
+<a class="reference internal image-reference" href="../../_images/flash_encryption_secure_boot.jpg"><img alt="../../_images/flash_encryption_secure_boot.jpg" src="../../_images/flash_encryption_secure_boot.jpg" style="width: 405.0px; height: 378.0px;" /></a>
+<figcaption>
+<p><span class="caption-text">以 ESP32 示例开启 flash 加密和安全启动提示信息</span><a class="headerlink" href="#id15" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<p>固件烧录过程中，会向芯片的 eFuse 中烧录密钥等信息。待固件及 eFuse 烧录完成后，显示 <code class="docutils literal notranslate"><span class="pre">FINISH/完成</span></code>。</p>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>为防止已加密的模组重烧，工具烧录前会默认校验 eFuse flash 加密及安全启动信息，防止报废。</p>
+</div>
+</section>
+</section>
+<section id="id7">
+<h2>版本发布说明<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
+<ul>
+<li><p>3.9.11</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-P4 ECO7 (rev 3.2)</p></li>
+<li><p>支持 ESP32-S31</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.10</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-P4 ECO6</p></li>
+<li><p>支持 ESP32-C5 ECO3</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SPI_MODE</span></code> 和 <code class="docutils literal notranslate"><span class="pre">SPI_SPEED</span></code> 不可编辑</p></li>
+<li><p>支持在工厂模式下对待下载文件及烧录地址进行 CRC32 检查</p></li>
+<li><p>支持 ESP32-C5 安全启动 V2 以及 flash 加密</p></li>
+<li><p>支持 ESP32、ESP32-S2、ESP32-S3 eFuse flash_voltage 配置</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.9</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-P4 USB 下载</p></li>
+<li><p>增加 help 按钮，包含工具更新及在线文档</p></li>
+<li><p>支持 ESP32-P4 flash size &gt; 16 MB 烧录</p></li>
+<li><p>增加烧录过程中 MD5 校验状态展示</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.8</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>增加 <code class="docutils literal notranslate"><span class="pre">Read</span> <span class="pre">Flash</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">Read</span> <span class="pre">Efuse</span></code> 界面</p></li>
+<li><p>支持 ESP32-C5 和 ESP32-C61</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.7</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-P4</p></li>
+<li><p>更新 UI 的显示图标</p></li>
+<li><p>修复长时间使用后烧录过程图标卡顿问题</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.6</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32、ESP32-H2、ESP32-C6、ESP32-C2、ESP32-S2 安全启动 V2 以及 flash 加密</p></li>
+<li><p>工厂模式下，待烧录产品个数可配置，最多 20 个</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.5</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-H2</p></li>
+<li><p>支持擦除按钮不可点击</p></li>
+<li><p>修复一些已知漏洞</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.4</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-C6</p></li>
+<li><p>支持 ESP32-C3 和 ESP32-S3 flash 加密</p></li>
+<li><p>添加 XMC flash 修复</p></li>
+<li><p>支持工厂模式下的烧录计数</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.3</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>支持 ESP32-C2</p></li>
+<li><p>更新烧录过程中完成时的图标</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>3.9.2</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>修复配置文件错误问题</p></li>
+<li><p>更新自动启动流程</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+</section>
+
+    <script type="text/javascript">
+        function init() {
+            WaveDrom.ProcessAll();
+        }
+        window.onload = init;
+    </script>
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="esp_production_testing_guide.html" class="btn btn-neutral float-right" title="乐鑫产测指南" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral float-left" title="生产阶段" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> 上一页</a>
+      
+    </div>
+  
+
+  <hr />
+  <div style="display: flex; justify-content: space-between;">
+  <div class="f5 contribution" style="height:100px;width:200px;float:left;"><b>对本文档有建议？</b><br><br><font size=2>
+    
+    
+    <a id="feedback" class="btn btn-neutral" href="https://www.espressif.com/zh-hans/company/documents/documentation_feedback?docId=8133&sections=Flash 下载工具用户指南 (production_stage/tools/flash_download_tool)&version=esp32s3 latest (master)">
+      <svg aria-hidden="true" role="img" class="octicon mr-1" viewBox="2 2 16 16" width="12" height="12" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible">
+        <path fill-rule="evenodd" d="M17.218,2.268L2.477,8.388C2.13,8.535,2.164,9.05,2.542,9.134L9.33,10.67l1.535,6.787c0.083,0.377,0.602,0.415,0.745,0.065l6.123-14.74C17.866,2.46,17.539,2.134,17.218,2.268 M3.92,8.641l11.772-4.89L9.535,9.909L3.92,8.641z M11.358,16.078l-1.268-5.613l6.157-6.157L11.358,16.078z"></path>
+      </svg>&nbsp;提交文档反馈
+    </a>
+  </font></div>
+
+
+  <div style="height:100px;width:200px;margin:0 auto;"><b>帮助完善本文档？</b><br><br><font size=2>
+    <a id="edit-on-github" class="btn btn-neutral" href="https://github.com/espressif/esp-test-tools/blob/eb6f365/docs/zh_CN/production_stage/tools/flash_download_tool.rst">
+      <svg aria-hidden="true" role="img" class="octicon mr-1" viewBox="2 2 16 16" width="12" height="12" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible">
+        <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.52-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+      </svg>&nbsp;在 GitHub 上修改
+    </a>
+  </font></div>
+
+  <div style="height:100px;width:180px;float:right;"><b>查找更多资料？</b>
+    <div><font size = 2><br><a id="官方论坛硬件版块" href="https://www.esp32.com/viewforum.php?f=30"><svg aria-hidden="true" role="img" class="octicon mr-1" viewBox="2 0 16 16" width="12" height="12" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible"><path fill-rule="evenodd" d="M17.659,3.681H8.468c-0.211,0-0.383,0.172-0.383,0.383v2.681H2.341c-0.21,0-0.383,0.172-0.383,0.383v6.126c0,0.211,0.172,0.383,0.383,0.383h1.532v2.298c0,0.566,0.554,0.368,0.653,0.27l2.569-2.567h4.437c0.21,0,0.383-0.172,0.383-0.383v-2.681h1.013l2.546,2.567c0.242,0.249,0.652,0.065,0.652-0.27v-2.298h1.533c0.211,0,0.383-0.172,0.383-0.382V4.063C18.042,3.853,17.87,3.681,17.659,3.681 M11.148,12.87H6.937c-0.102,0-0.199,0.04-0.27,0.113l-2.028,2.025v-1.756c0-0.211-0.172-0.383-0.383-0.383H2.724V7.51h5.361v2.68c0,0.21,0.172,0.382,0.383,0.382h2.68V12.87z M17.276,9.807h-1.533c-0.211,0-0.383,0.172-0.383,0.383v1.755L13.356,9.92c-0.07-0.073-0.169-0.113-0.27-0.113H8.851v-5.36h8.425V9.807z"></path></svg>&nbsp;查看官方论坛硬件版块</a></font>
+      </div>
+       <div><font size = 2><a id="联系商务支持" href="https://www.espressif.com/zh-hans/contact-us/sales-questions"><svg aria-hidden="true" role="img" class="octicon mr-1" viewBox="2 1 16 16" width="12" height="12" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible"><path fill-rule="evenodd" d="M15.573,11.624c0.568-0.478,0.947-1.219,0.947-2.019c0-1.37-1.108-2.569-2.371-2.569s-2.371,1.2-2.371,2.569c0,0.8,0.379,1.542,0.946,2.019c-0.253,0.089-0.496,0.2-0.728,0.332c-0.743-0.898-1.745-1.573-2.891-1.911c0.877-0.61,1.486-1.666,1.486-2.812c0-1.79-1.479-3.359-3.162-3.359S4.269,5.443,4.269,7.233c0,1.146,0.608,2.202,1.486,2.812c-2.454,0.725-4.252,2.998-4.252,5.685c0,0.218,0.178,0.396,0.395,0.396h16.203c0.218,0,0.396-0.178,0.396-0.396C18.497,13.831,17.273,12.216,15.573,11.624 M12.568,9.605c0-0.822,0.689-1.779,1.581-1.779s1.58,0.957,1.58,1.779s-0.688,1.779-1.58,1.779S12.568,10.427,12.568,9.605 M5.06,7.233c0-1.213,1.014-2.569,2.371-2.569c1.358,0,2.371,1.355,2.371,2.569S8.789,9.802,7.431,9.802C6.073,9.802,5.06,8.447,5.06,7.233 M2.309,15.335c0.202-2.649,2.423-4.742,5.122-4.742s4.921,2.093,5.122,4.742H2.309z M13.346,15.335c-0.067-0.997-0.382-1.928-0.882-2.732c0.502-0.271,1.075-0.429,1.686-0.429c1.828,0,3.338,1.385,3.535,3.161H13.346z"></path></svg>&nbsp;联系商务支持</a>
+        </font></div>
+       <div><font size = 2><a id="联系技术支持" href="https://www.espressif.com/zh-hans/contact-us/technical-inquiries"><svg aria-hidden="true" role="img" class="octicon mr-1" viewBox="2 1 16 16" width="12" height="12" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible"><path fill-rule="evenodd" d="M15.573,11.624c0.568-0.478,0.947-1.219,0.947-2.019c0-1.37-1.108-2.569-2.371-2.569s-2.371,1.2-2.371,2.569c0,0.8,0.379,1.542,0.946,2.019c-0.253,0.089-0.496,0.2-0.728,0.332c-0.743-0.898-1.745-1.573-2.891-1.911c0.877-0.61,1.486-1.666,1.486-2.812c0-1.79-1.479-3.359-3.162-3.359S4.269,5.443,4.269,7.233c0,1.146,0.608,2.202,1.486,2.812c-2.454,0.725-4.252,2.998-4.252,5.685c0,0.218,0.178,0.396,0.395,0.396h16.203c0.218,0,0.396-0.178,0.396-0.396C18.497,13.831,17.273,12.216,15.573,11.624 M12.568,9.605c0-0.822,0.689-1.779,1.581-1.779s1.58,0.957,1.58,1.779s-0.688,1.779-1.58,1.779S12.568,10.427,12.568,9.605 M5.06,7.233c0-1.213,1.014-2.569,2.371-2.569c1.358,0,2.371,1.355,2.371,2.569S8.789,9.802,7.431,9.802C6.073,9.802,5.06,8.447,5.06,7.233 M2.309,15.335c0.202-2.649,2.423-4.742,5.122-4.742s4.921,2.093,5.122,4.742H2.309z M13.346,15.335c-0.067-0.997-0.382-1.928-0.882-2.732c0.502-0.271,1.075-0.429,1.686-0.429c1.828,0,3.338,1.385,3.535,3.161H13.346z"></path></svg>&nbsp;联系技术支持</a>
+        </font></div>
+    </div>
+  </div>
+  <div role="contentinfo">
+  </div>
+  <ul class="footer">
+    <li>
+      <br> <!-- Separate Feedback/Information part with Copyright/Sphinx -->
+        
+        
+        &copy; <a href="../../copyright.html">版权所有</a> 2024 - 2026 乐鑫信息科技（上海）股份有限公司
+    <p>
+      
+      
+      利用 <a href="http://sphinx-doc.org/">Sphinx</a> 构建，使用的 基于 <a href="https://github.com/readthedocs/sphinx_rtd_theme">RTD Sphinx</a> <a href="https://github.com/espressif/sphinx_idf_theme"> 的主题</a>  。
+    </li></p> 
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+---
+description: 本板只能 USB 下载、U0 未接；任何改动都必须保证烧完后仍能 USB 下载，否则变砖。开工前必读。
+alwaysApply: true
+---
+
+# 硬约束：USB 下载绝不能丢（否则变砖）
+
+本板是电子吧唧（ESP32-S3），**下载口只有原生 USB**（GPIO19=DM / GPIO20=DP）。**UART0 没有接到电脑**，没有备用串口下载。EN 也没有复位键，只能拔插 USB 复位。
+
+**任何固件、sdkconfig、引脚、USB、eFuse 改动，烧进去之后都必须仍能用 USB 再次下载。做不到就不要改、不要烧。**
+
+## 必须保持
+
+- `CONFIG_USJ_ENABLE_USB_SERIAL_JTAG=y`（USB Serial/JTAG 下载 + 日志）
+- 不要占用 USB PHY：不要初始化 TinyUSB / USB-OTG
+- 不要把 GPIO19 / GPIO20 当普通 GPIO 用
+- 不要烧任何关掉 USB JTAG / USB 下载 / 调试的 eFuse
+- 不要开 Secure Boot / Flash 加密（除非有经过确认的二次下载方案）
+- 固件必须能正常跑起来；空 Flash 或非法镜像会看门狗复位，USB 跟着周期性掉线
+
+## 禁止（会直接或间接变砖）
+
+- 关掉 USB Serial/JTAG，或把控制台改到仅 UART0（U0 没接，等于失去下载和日志）
+- 抢 USB PHY 做 Device/Host，导致 ROM 的 USB 下载口消失
+- 改 strapping（尤其 GPIO0 / GPIO3 / GPIO45 / GPIO46）导致无法进下载或起不来
+- 看门狗死循环复位、上电立刻 crash，电脑侧 USB 反复枚举失败
+
+改 USB / 下载 / 控制台 / 引脚复用 / eFuse 之前，先说明如何保证「烧完仍可用同一 USB 口 `idf.py flash`」。说不清就停。

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-73KGWFC8DM"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-73KGWFC8DM');
+        </script><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>与 ESP32-S3 创建串口连接 - ESP32-S3 -  &mdash; ESP-IDF 编程指南 v6.0.2 文档</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=a60756f2" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=949a1ff5" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=851bd809" />
+      <link rel="stylesheet" type="text/css" href="../_static/hover_api.css?v=b5535953" />
+      <link rel="stylesheet" type="text/css" href="../_static/js/chatbot_widget.css?v=3106ea3a" />
+
+  
+    <link rel="canonical" href="https://docs.espressif.com/projects/esp-idf/zh_CN/stable/esp32s3/get-started/establish-serial-connection.html" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=4d7ddec9"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=ff8fa330"></script>
+        <script src="../_static/hover_api.js?v=3332994e"></script>
+        <script src="../_static/translations.js?v=beaddf03"></script>
+        <script src="https://wavedrom.com/skins/default.js"></script>
+        <script src="https://wavedrom.com/wavedrom.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+
+    
+        
+
+    <script type="text/javascript">
+        DOCUMENTATION_OPTIONS.PAGENAME = 'get-started/establish-serial-connection';
+        DOCUMENTATION_OPTIONS.PROJECT_SLUG = 'esp-idf';
+        DOCUMENTATION_OPTIONS.LATEST_BRANCH_NAME = 'master';
+        DOCUMENTATION_OPTIONS.VERSIONS_URL = 'https://dl.espressif.com/dl/esp-idf/idf_versions.js';
+        DOCUMENTATION_OPTIONS.LANGUAGES = ["en", "zh_CN"];
+        DOCUMENTATION_OPTIONS.IDF_TARGET = 'esp32s3';
+        DOCUMENTATION_OPTIONS.HAS_IDF_TARGETS = ["esp32", "esp32s2", "esp32s3", "esp32c3", "esp32c2", "esp32c5", "esp32c6", "esp32p4"]
+        DOCUMENTATION_OPTIONS.RELEASE = 'v6.0.2';
+        DOCUMENTATION_OPTIONS.LANGUAGE_URL = 'zh_CN';
+
+    </script>
+
+    <script type="text/javascript" src="https://dl.espressif.com/dl/esp-idf/idf_versions.js"></script>
+    <link rel="author" title="关于此文档" href="../about.html" />
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+    <link rel="next" title="烧录故障排除" href="flashing-troubleshooting.html" />
+    <link rel="prev" title="在 Windows 上通过命令行构建项目" href="windows-start-project.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ESP-IDF 编程指南
+              <img src="../_static/espressif-logo.svg" class="logo" alt="Logo"/>
+          </a>
+
+          
+            <div class="selectors">
+              <select id="target-select" style="width: 150px;" hidden>
+                <option value="" disabled selected>Choose target...</option>
+              </select>
+            </div>
+          
+
+          <div class="selectors">
+            <select id="version-select" style="width: 150px;" hidden>
+              <option value="" disabled selected>Choose version...</option>
+            </select>
+          </div>
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="搜索文档" aria-label="搜索文档" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="导航菜单">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">快速入门</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#id2">概述</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id3">准备工作</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#get-started-set-up-tools">安装</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#get-started-build">构建首个项目</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="index.html#ide">在 IDE 中构建</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html#id8">通过命令行构建</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="windows-start-project.html">在 Windows 上通过命令行构建项目</a></li>
+<li class="toctree-l4"><a class="reference internal" href="linux-macos-start-project.html">在 Linux 或 macOS 上通过命令行构建项目</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id9">卸载 ESP-IDF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#id10">相关文档</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api-reference/index.html">API 参考</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hw-reference/index.html">H/W 硬件参考</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-guides/index.html">API 指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration-guides/index.html">迁移指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security/index.html">安全指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libraries-and-frameworks/index.html">库与框架</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribute/index.html">贡献指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">ESP-IDF 版本简介</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../resources.html">资源</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../COPYRIGHT.html">版权和许可证</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">关于本指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../languages.html">切换语言</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="移动版导航菜单" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ESP-IDF 编程指南</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="页面导航">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">快速入门</a></li>
+          <li class="breadcrumb-item"><a href="windows-start-project.html">在 Windows 上通过命令行构建项目</a></li>
+      <li class="breadcrumb-item active">与 ESP32-S3 创建串口连接</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/espressif/esp-idf/blob/v6.0.2/docs/zh_CN/get-started/establish-serial-connection.rst" class="fa fa-github"> 在 GitHub 上编辑</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="esp32-s3">
+<h1>与 ESP32-S3 创建串口连接<a class="headerlink" href="#esp32-s3" title="此标题的永久链接"></a></h1>
+<p><a class="reference external" href="../../../../en/v6.0.2/esp32s3/get-started/establish-serial-connection.html">[English]</a></p>
+<p>可以使用 USB 至 UART 桥或 ESP32-S3 支持的 USB 外设，与 ESP32-S3 创建串口连接。</p>
+<p>部分开发板中已经安装有 USB 至 UART 桥。如未安装，可使用外部桥。</p>
+<section id="usb">
+<h2>支持的 USB 外设<a class="headerlink" href="#usb" title="此标题的永久链接"></a></h2>
+<p>ESP32-S3 支持 USB 外设。无需 USB 至 UART 桥，便可直接烧录设备。</p>
+<figure class="align-center" id="id6">
+<div class="align-default"><a class="reference internal image-reference" href="../_images/blockdiag-d3cb9f0f0574f39d31ef40510e7ceada3bf065be.png"><img height="251.99999999999997" src="../_images/blockdiag-d3cb9f0f0574f39d31ef40510e7ceada3bf065be.png" width="622.3" /></a></div>
+<figcaption>
+<p><span class="caption-text">支持 USB 的 SoC</span><a class="headerlink" href="#id6" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<p>部分支持 USB 外设的开发板同时也包含 USB 至 UART 桥。</p>
+</section>
+<section id="usb-uart">
+<h2>安装有 USB 至 UART 桥的开发板<a class="headerlink" href="#usb-uart" title="此标题的永久链接"></a></h2>
+<p>在安装有 USB 至 UART 桥的开发板中，PC 和桥之间通过 USB 连接，桥和 ESP32-S3 之间通过 UART 连接。</p>
+<figure class="align-center" id="id7">
+<div class="align-default"><img height="360" src="../_images/blockdiag-8b50448a708f1a5dac53ab389ad912ad8c7b61c8.png" width="1016" /></div>
+<figcaption>
+<p><span class="caption-text">安装有 USB 至 UART 桥的开发板</span><a class="headerlink" href="#id7" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="id1">
+<h2>外部 USB 至 UART 桥<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h2>
+<p>部分开发板使用外部 USB 至 UART 桥。这种情况通常出现在需要控制空间和成本的产品中，例如一些小型开发板或成品。</p>
+<figure class="align-center" id="id8">
+<div class="align-default"><img height="360" src="../_images/blockdiag-363d7f0a3cdb20f8225d73684504d3a69c2614f8.png" width="1229" /></div>
+<figcaption>
+<p><span class="caption-text">外部 USB 至 UART 桥</span><a class="headerlink" href="#id8" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="id2">
+<h2>使用 USB 进行烧录<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
+<p>ESP32-S3 支持 USB 外设，无需外部 USB 至 UART 桥，即可烧录二进制文件。</p>
+<p>ESP32-S3 上的 USB 使用 <strong>GPIO20</strong> 作为 <strong>D+</strong>， <strong>GPIO19</strong> 作为 <strong>D-</strong>。</p>
+<p>首次烧录需要手动设置 ESP32-S3 进入下载模式。请按住 <code class="docutils literal notranslate"><span class="pre">BOOT</span></code> 按钮，同时按一下 <code class="docutils literal notranslate"><span class="pre">RESET</span></code> 按钮。之后，松开 <code class="docutils literal notranslate"><span class="pre">BOOT</span></code> 按钮。</p>
+</section>
+<section id="uart">
+<h2>使用 UART 进行烧录<a class="headerlink" href="#uart" title="此标题的永久链接"></a></h2>
+<p>本节描述如何使用 USB 至 UART 桥在 ESP32-S3 和 PC 之间建立串行连接。板上桥与外部桥均适用。</p>
+<section id="esp32-s3-pc">
+<h3>连接 ESP32-S3 和 PC<a class="headerlink" href="#esp32-s3-pc" title="此标题的永久链接"></a></h3>
+<p>用 USB 线将 ESP32-S3 开发板连接到 PC。如果设备驱动程序没有自动安装，请先确认 ESP32-S3 开发板上的 USB 至 UART 桥（或外部转 UART 适配器）型号，然后在网上搜索驱动程序，并进行手动安装。</p>
+<p>以下是乐鑫 ESP32-S3 开发板驱动程序的链接：</p>
+<ul class="simple">
+<li><p>CP210x: <a class="reference external" href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers">CP210x USB 至 UART 桥 VCP 驱动程序</a></p></li>
+<li><p>FTDI: <a class="reference external" href="https://ftdichip.com/drivers/vcp-drivers/">FTDI 虚拟 COM 端口驱动程序</a></p></li>
+</ul>
+<p>以上驱动仅供参考，请查看开发板用户指南，了解开发板具体使用的 USB 至 UART 桥芯片。一般情况下，当 ESP32-S3 开发板与 PC 连接时，对应驱动程序应该已经被打包在操作系统中，并已经自动安装。</p>
+<p>对于使用 USB 至 UART 桥下载的设备，可以运行以下命令，包括定义波特率的可选参数。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>idf.py<span class="w"> </span>-p<span class="w"> </span>PORT<span class="w"> </span><span class="o">[</span>-b<span class="w"> </span>BAUD<span class="o">]</span><span class="w"> </span>flash
+</pre></div>
+</div>
+<p>将 <code class="docutils literal notranslate"><span class="pre">PORT</span></code> 替换为 ESP32-S3 开发板的串口名称。<code class="docutils literal notranslate"><span class="pre">-b</span></code> 为可选参数，默认的波特率为 <code class="docutils literal notranslate"><span class="pre">460800</span></code>。如需改变烧录器的波特率，请用需要的波特率代替 <code class="docutils literal notranslate"><span class="pre">BAUD</span></code>。</p>
+<p>要查看串口名称，Windows 用户请参考 <a class="reference internal" href="#check-port-on-windows">check-port-on-windows</a>，Linux 与 macOS 用户请参考 <a class="reference internal" href="#check-port-on-linux-and-macos">check-port-on-linux-and-macos</a>。</p>
+<p>例如，Windows 平台上串口名称为 <code class="docutils literal notranslate"><span class="pre">COM3</span></code>，所需波特率为 <code class="docutils literal notranslate"><span class="pre">115200</span></code>，可使用如下命令烧录开发板：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>idf.py<span class="w"> </span>-p<span class="w"> </span>COM3<span class="w"> </span>-b<span class="w"> </span><span class="m">115200</span><span class="w"> </span>flash
+</pre></div>
+</div>
+<p>Linux 平台上串口名称为 <code class="docutils literal notranslate"><span class="pre">/dev/ttyUSB0</span></code>，所需波特率为 <code class="docutils literal notranslate"><span class="pre">115200</span></code>，可使用如下命令烧录开发板：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>idf.py<span class="w"> </span>-p<span class="w"> </span>/dev/ttyUSB0<span class="w"> </span>-b<span class="w"> </span><span class="m">115200</span><span class="w"> </span>flash
+</pre></div>
+</div>
+<p>macOS 平台上串口名称为 <code class="docutils literal notranslate"><span class="pre">/dev/cu.usbserial-1401</span></code>，所需波特率为 <code class="docutils literal notranslate"><span class="pre">115200</span></code>，可使用如下命令烧录开发板：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>idf.py<span class="w"> </span>-p<span class="w"> </span>/dev/cu.usbserial-1401<span class="w"> </span>-b<span class="w"> </span><span class="m">115200</span><span class="w"> </span>flash
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>如果设备不支持自动下载模式，则需要手动进入下载模式。请按住 <code class="docutils literal notranslate"><span class="pre">BOOT</span></code> 按钮，同时按一下 <code class="docutils literal notranslate"><span class="pre">RESET</span></code> 按钮。之后，松开 <code class="docutils literal notranslate"><span class="pre">BOOT</span></code> 按钮。</p>
+</div>
+</section>
+</section>
+<section id="windows">
+<span id="check-port-on-windows"></span><h2>在 Windows 上查看端口<a class="headerlink" href="#windows" title="此标题的永久链接"></a></h2>
+<p>检查 Windows 设备管理器中的 COM 端口列表。断开 ESP32-S3 与 PC 的连接，然后重新连接，查看哪个端口从列表中消失后又再次出现。</p>
+<p>以下为 ESP32 DevKitC 和 ESP32 WROVER KIT 串口：</p>
+<figure class="align-center" id="id9">
+<img alt="设备管理器中 ESP32-DevKitC 的 USB 至 UART 桥" src="../_images/esp32-devkitc-in-device-manager.png" />
+<figcaption>
+<p><span class="caption-text">设备管理器中 ESP32-DevKitC 的 USB 至 UART 桥</span><a class="headerlink" href="#id9" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id10">
+<img alt="Windows 设备管理器中 ESP-WROVER-KIT 的两个 USB 串行端口" src="../_images/esp32-wrover-kit-in-device-manager.png" />
+<figcaption>
+<p><span class="caption-text">Windows 设备管理器中 ESP-WROVER-KIT 的两个 USB 串行端口</span><a class="headerlink" href="#id10" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="linux-macos">
+<span id="check-port-on-linux-and-macos"></span><h2>在 Linux 和 macOS 上查看端口<a class="headerlink" href="#linux-macos" title="此标题的永久链接"></a></h2>
+<p>查看 ESP32-S3 开发板（或外部转串口适配器）的串口设备名称，请将以下命令运行两次。首先，断开开发板或适配器，首次运行以下命令；然后，连接开发板或适配器，再次运行以下命令。其中，第二次运行命令后出现的端口即是 ESP32-S3 对应的串口：</p>
+<p>Linux:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ls</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">tty</span><span class="o">*</span>
+</pre></div>
+</div>
+<p>macOS:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ls</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cu</span><span class="o">.*</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>对于 macOS 用户：若没有看到串口，请检查是否安装 USB/串口驱动程序。具体应使用的驱动程序，见章节 <a class="reference internal" href="#esp32-s3-pc">连接 ESP32-S3 和 PC</a>。对于 macOS High Sierra (10.13) 的用户，你可能还需要手动允许驱动程序的加载，具体可打开 <code class="docutils literal notranslate"><span class="pre">系统偏好设置</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">安全和隐私</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">通用</span></code>，检查是否有信息显示：“来自开发人员的系统软件...”，其中开发人员的名称为 Silicon Labs 或 FTDI。</p>
+</div>
+</section>
+<section id="linux-dialout-uucp">
+<span id="linux-dialout-group"></span><h2>在 Linux 中添加用户到 <code class="docutils literal notranslate"><span class="pre">dialout</span></code> 或 <code class="docutils literal notranslate"><span class="pre">uucp</span></code> 组<a class="headerlink" href="#linux-dialout-uucp" title="此标题的永久链接"></a></h2>
+<p>当前登录用户应当可以通过 USB 对串口进行读写操作。在多数 Linux 版本中，都可以通过以下命令，将用户添加到 <code class="docutils literal notranslate"><span class="pre">dialout</span></code> 组，从而获许读写权限:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>sudo usermod -a -G dialout $USER
+</pre></div>
+</div>
+<p>在 Arch Linux 中，需要通过以下命令将用户添加到 <code class="docutils literal notranslate"><span class="pre">uucp</span></code> 组中:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>sudo usermod -a -G uucp $USER
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>请重新登录，确保串口读写权限生效。</p>
+</div>
+</section>
+<section id="id3">
+<h2>确认串口连接<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
+<p>现在，请使用串口终端程序，查看重置 ESP32-S3 后终端上是否有输出，从而验证串口连接是否可用。</p>
+<p>ESP32-S3 的控制台波特率默认为 115200。</p>
+<section id="windows-linux">
+<h3>Windows 和 Linux 操作系统<a class="headerlink" href="#windows-linux" title="此标题的永久链接"></a></h3>
+<p>在本示例中，我们使用 <a class="reference external" href="https://putty.software/">PuTTY SSH Client</a>，该工具可在 Windows 和 Linux 上使用。你也可以使用其他串口程序，并按照下方所示设置通信参数。</p>
+<p>运行终端，配置在上述步骤中确认的串口：波特率 = 115200（如有需要，请更改为使用芯片的默认波特率），数据位 = 8，停止位 = 1，奇偶校验 = N。以下截屏分别展示了如何在 Windows 和 Linux 中配置串口和上述通信参数（如 115200-8-1-N）。注意，这里一定要选择在上述步骤中确认的串口进行配置。</p>
+<figure class="align-center" id="id11">
+<img alt="在 Windows 操作系统中使用 PuTTY 设置串口通信参数" src="../_images/putty-settings-windows.png" />
+<figcaption>
+<p><span class="caption-text">在 Windows 操作系统中使用 PuTTY 设置串口通信参数</span><a class="headerlink" href="#id11" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id12">
+<img alt="在 Linux 操作系统中使用 PuTTY 设置串口通信参数" src="../_images/putty-settings-linux.png" />
+<figcaption>
+<p><span class="caption-text">在 Linux 操作系统中使用 PuTTY 设置串口通信参数</span><a class="headerlink" href="#id12" title="此图像的永久链接"></a></p>
+</figcaption>
+</figure>
+<p>然后，请检查 ESP32-S3 是否有打印日志。如有，请在终端打开串口进行查看。这里的日志内容取决于加载到 ESP32-S3 的应用程序，请参考 <a class="reference internal" href="#id5">输出示例</a>。如果没有看到输出日志，请参考 <a class="reference internal" href="#id4">故障排除</a>。</p>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>请在验证完串口通信正常后，关闭串口终端。如果终端一直保持打开的状态，之后上传固件时将无法访问串口。</p>
+</div>
+</section>
+<section id="macos">
+<h3>macOS 操作系统<a class="headerlink" href="#macos" title="此标题的永久链接"></a></h3>
+<p>macOS 提供了 <strong>屏幕</strong> 命令，因此无需安装串口终端程序。</p>
+<ul>
+<li><p>参考 <a class="reference internal" href="#linux-macos">在 Linux 和 macOS 上查看端口</a>，运行以下命令:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ls</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cu</span><span class="o">.*</span>
+</pre></div>
+</div>
+</li>
+<li><p>会看到类似如下输出:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cu</span><span class="o">.</span><span class="n">Bluetooth</span><span class="o">-</span><span class="n">Incoming</span><span class="o">-</span><span class="n">Port</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cu</span><span class="o">.</span><span class="n">SLAB_USBtoUART</span>      <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cu</span><span class="o">.</span><span class="n">SLAB_USBtoUART7</span>
+</pre></div>
+</div>
+</li>
+<li><p>根据连接到电脑上的开发板类型和数量，输出结果会有所不同。请选择开发板的设备名称，并运行以下命令（如有需要，请将“115200”更改为使用芯片的默认波特率）:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">screen</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cu</span><span class="o">.</span><span class="n">device_name</span> <span class="mi">115200</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>将 <code class="docutils literal notranslate"><span class="pre">device_name</span></code> 替换为运行 <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">/dev/cu.*</span></code> 后出现的设备串口号。</p>
+<ul class="simple">
+<li><p><strong>屏幕</strong> 显示的日志即为所需内容。日志内容取决于加载到 ESP32-S3 的应用程序，请参考 <a class="reference internal" href="#id5">输出示例</a>。如果没有看到输出日志，请参考 <a class="reference internal" href="#id4">故障排除</a>。请使用 <code class="docutils literal notranslate"><span class="pre">Ctrl-A</span> <span class="pre">+</span> <span class="pre">K</span></code> 键退出当前 <strong>屏幕</strong> 会话。</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>请在验证完串口通信正常后，关闭 <strong>当前屏幕会话</strong>。如果直接关闭终端窗口而没有关闭 <strong>屏幕</strong>，之后上传固件时将无法访问串口。</p>
+</div>
+</section>
+<section id="id4">
+<h3>故障排除<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h3>
+<p>如果没有日志输出，请检查以下原因：</p>
+<ul class="simple">
+<li><p>ESP32-S3 的供电是否正常</p></li>
+<li><p>启动终端程序后，是否重置开发板</p></li>
+<li><p>使用 <a class="reference internal" href="#windows">在 Windows 上查看端口</a> 与 <a class="reference internal" href="#linux-macos">在 Linux 和 macOS 上查看端口</a> 中描述的方法，检查所选串口是否正确</p></li>
+<li><p>其他程序是否正在使用该串口</p></li>
+<li><p>串口终端程序中的串口设置是否适用于该应用程序</p></li>
+<li><p>应用程序是否会输出日志。具体来说，如果在 <code class="docutils literal notranslate"><span class="pre">Component</span> <span class="pre">config</span></code> &gt; <code class="docutils literal notranslate"><span class="pre">Log</span></code> &gt; <code class="docutils literal notranslate"><span class="pre">Log</span> <span class="pre">Level</span></code> &gt; <code class="docutils literal notranslate"><span class="pre">Default</span> <span class="pre">log</span> <span class="pre">verbosity</span> <span class="pre">(Info)</span></code> 中设置为 <code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">output</span></code>，则不会打印出任何日志。你可以在 <code class="docutils literal notranslate"><span class="pre">menuconfig</span></code> 中更改该设置。</p></li>
+<li><p>是否禁用了日志输出（使用 <a class="reference external" href="https://github.com/espressif/esp-idf/tree/v6.0.2/examples/get-started/hello_world">hello world 示例 </a> 进行测试）</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3>输出示例<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h3>
+<p>以下是一个日志示例。如果没看到任何输出，请尝试重置开发板。</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ets Jun  8 2016 00:22:57
+
+rst:0x5 (DEEPSLEEP_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+ets Jun  8 2016 00:22:57
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0x00
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0008,len:8
+load:0x3fff0010,len:3464
+load:0x40078000,len:7828
+load:0x40080000,len:252
+entry 0x40080034
+I (44) boot: ESP-IDF v2.0-rc1-401-gf9fba35 2nd stage bootloader
+I (45) boot: compile time 18:48:10
+...
+</pre></div>
+</div>
+<p>如果打印出的日志是可读的（而不是乱码），则表示串口连接正常。此时，可以继续进行安装，并最终将应用程序上载到 ESP32-S3。</p>
+<div class="admonition note">
+<p class="admonition-title">备注</p>
+<p>在某些串口接线方式下，在 ESP32-S3 启动并开始打印串口日志前，需要在终端程序中禁用串口 RTS ＆ DTR 管脚。该问题仅存在于将 RTS ＆ DTR 管脚直接连接到 EN ＆ GPIO0 管脚上的情况，绝大多数开发板（包括乐鑫所有的开发板）都没有这个问题。更多详细信息，请参考 <a class="reference external" href="https://docs.espressif.com/projects/esptool/en/latest/advanced-topics/boot-mode-selection.html#automatic-bootloader">esptool 文档</a>。</p>
+</div>
+<p>如在安装 ESP32-S3 硬件开发的软件环境时，从 <a class="reference internal" href="windows-start-project.html#get-started-connect"><span class="std std-ref">Windows</span></a>、<a class="reference internal" href="linux-macos-start-project.html#get-started-connect-linux-macos"><span class="std std-ref">Linux 或 macOS 连接设备</span></a> 跳转到了这里，请从 <a class="reference internal" href="windows-start-project.html#get-started-configure"><span class="std std-ref">Windows</span></a>、<a class="reference internal" href="linux-macos-start-project.html#get-started-configure-linux-macos"><span class="std std-ref">Linux 或 macOS 配置项目</span></a> 继续阅读。</p>
+</section>
+</section>
+</section>
+
+    <script type="text/javascript">
+        function init() {
+            WaveDrom.ProcessAll();
+        }
+        window.onload = init;
+    </script>
+
+           </div>
+             <div class="articleComments">
+
+<style>
+    .expand-feedback-content  {
+        display: none;
+    }
+    .click-like-or-dislike {
+        background-color: #d3d3d3;
+        pointer-events: none;
+    }
+</style>
+
+<script>
+    function submitFeedbackForm(user_likes_document) {
+        // Send to GA4 the user reaction
+        gtag('event', 'user_reaction', {
+            'user_likes_document': user_likes_document
+        });
+
+        if (user_likes_document === 1) {
+            document.querySelector('.like-btn').classList.add('click-like-or-dislike');
+            document.getElementById("expandContentLike").style.display = 'block';
+        } else {
+            document.querySelector('.dislike-btn').classList.add('click-like-or-dislike');
+            document.getElementById("expandContent").style.display = 'block';
+        }
+
+        document.querySelector('.like-btn').style.pointerEvents = 'none';
+        document.querySelector('.dislike-btn').style.pointerEvents = 'none';
+    }
+</script>
+
+<hr>
+
+<p style="text-align:center"><strong>此文档对您有帮助吗？</strong></p>
+<p style="text-align:center">
+    <button class="like-btn" onclick="submitFeedbackForm(1)">
+        <svg aria-hidden="true" focusable="false" class="color-fg-muted" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible">
+            <path d="M8.834.066c.763.087 1.5.295 2.01.884.505.581.656 1.378.656 2.3 0 .467-.087 1.119-.157 1.637L11.328 5h1.422c.603 0 1.174.085 1.668.333.508.254.911.679 1.137 1.2.453.998.438 2.447.188 4.316l-.04.306c-.105.79-.195 1.473-.313 2.033-.131.63-.315 1.209-.668 1.672C13.97 15.847 12.706 16 11 16c-1.848 0-3.234-.333-4.388-.653-.165-.045-.323-.09-.475-.133-.658-.186-1.2-.34-1.725-.415A1.75 1.75 0 0 1 2.75 16h-1A1.75 1.75 0 0 1 0 14.25v-7.5C0 5.784.784 5 1.75 5h1a1.75 1.75 0 0 1 1.514.872c.258-.105.59-.268.918-.508C5.853 4.874 6.5 4.079 6.5 2.75v-.5c0-1.202.994-2.337 2.334-2.184ZM4.5 13.3c.705.088 1.39.284 2.072.478l.441.125c1.096.305 2.334.598 3.987.598 1.794 0 2.28-.223 2.528-.549.147-.193.276-.505.394-1.07.105-.502.188-1.124.295-1.93l.04-.3c.25-1.882.189-2.933-.068-3.497a.921.921 0 0 0-.442-.48c-.208-.104-.52-.174-.997-.174H11c-.686 0-1.295-.577-1.206-1.336.023-.192.05-.39.076-.586.065-.488.13-.97.13-1.328 0-.809-.144-1.15-.288-1.316-.137-.158-.402-.304-1.048-.378C8.357 1.521 8 1.793 8 2.25v.5c0 1.922-.978 3.128-1.933 3.825a5.831 5.831 0 0 1-1.567.81ZM2.75 6.5h-1a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h1a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+        </svg>
+    </button>
+    <button class="dislike-btn" onclick="submitFeedbackForm(0)">
+        <svg aria-hidden="true" focusable="false" class="" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display:inline-block;user-select:none;vertical-align:text-bottom;overflow:visible">
+            <path d="M7.083 15.986c-.763-.087-1.499-.295-2.011-.884-.504-.581-.655-1.378-.655-2.299 0-.468.087-1.12.157-1.638l.015-.112H3.167c-.603 0-1.174-.086-1.669-.334a2.415 2.415 0 0 1-1.136-1.2c-.454-.998-.438-2.447-.188-4.316l.04-.306C.32 4.108.41 3.424.526 2.864c.132-.63.316-1.209.669-1.672C1.947.205 3.211.053 4.917.053c1.848 0 3.234.332 4.388.652l.474.133c.658.187 1.201.341 1.726.415a1.75 1.75 0 0 1 1.662-1.2h1c.966 0 1.75.784 1.75 1.75v7.5a1.75 1.75 0 0 1-1.75 1.75h-1a1.75 1.75 0 0 1-1.514-.872c-.259.105-.59.268-.919.508-.671.491-1.317 1.285-1.317 2.614v.5c0 1.201-.994 2.336-2.334 2.183Zm4.334-13.232c-.706-.089-1.39-.284-2.072-.479l-.441-.125c-1.096-.304-2.335-.597-3.987-.597-1.794 0-2.28.222-2.529.548-.147.193-.275.505-.393 1.07-.105.502-.188 1.124-.295 1.93l-.04.3c-.25 1.882-.19 2.933.067 3.497a.923.923 0 0 0 .443.48c.208.104.52.175.997.175h1.75c.685 0 1.295.577 1.205 1.335-.022.192-.049.39-.075.586-.066.488-.13.97-.13 1.329 0 .808.144 1.15.288 1.316.137.157.401.303 1.048.377.307.035.664-.237.664-.693v-.5c0-1.922.978-3.127 1.932-3.825a5.878 5.878 0 0 1 1.568-.809Zm1.75 6.798h1a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25h-1a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25Z"></path>
+        </svg>
+    </button>
+</p>
+
+<div class="expand-feedback-content " id="expandContentLike">
+    <ul style="text-align:center">
+        <li>反馈已收到，谢谢！</li>
+        <li>如果您有其他意见，欢迎填写<a href="https://www.espressif.com/zh-hans/company/documents/documentation_feedback?docId=4286&sections=与 ESP32-S3 创建串口连接 (get-started/establish-serial-connection)&version=esp32s3 v6.0.2 (v6.0.2)">乐鑫文档反馈表</a>。</li>
+    </ul>
+</div>
+
+<div class="expand-feedback-content " id="expandContent">
+    <ul style="text-align:center">
+        <li>我们重视您的反馈。</li>
+        <li>您可以填写<a href="https://www.espressif.com/zh-hans/company/documents/documentation_feedback?docId=4286&sections=与 ESP32-S3 创建串口连接 (get-started/establish-serial-connection)&version=esp32s3 v6.0.2 (v6.0.2)">乐鑫文档反馈表</a>告诉我们如何改进该文档。</li>
+    </ul>
+</div>
+
+<br>
+
+
+             </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="页脚">
+        <a href="windows-start-project.html" class="btn btn-neutral float-left" title="在 Windows 上通过命令行构建项目" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
+        <a href="flashing-troubleshooting.html" class="btn btn-neutral float-right" title="烧录故障排除" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2016 - 2026 乐鑫信息科技（上海）股份有限公司。</p>
+  </div>
+
+  <ul class="footer">
+        <li>
+	    
+            
+            利用 <a href="http://sphinx-doc.org/">Sphinx</a> 构建，使用的  <a href="https://github.com/espressif/sphinx_idf_theme">主题</a>  based on <a href="https://github.com/readthedocs/sphinx_rtd_theme">Read the Docs Sphinx Theme</a>.
+         </li>
+    <li class="footer-aside">
+        <a href="../esp-idf-zh_CN-v6.0.2.zip"> Download HTML</a>
+    </li>
+
+  </ul> 
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

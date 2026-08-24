@@ -1,0 +1,31 @@
+---
+description: 任何操作前必须先问并得到同意；用户用 VS Code + ESP-IDF 扩展编译下载；优先用乐鑫官方组件。开工前必读。
+alwaysApply: true
+---
+
+# 工作方式：先问再做
+
+**任何操作之前都必须先问用户，得到明确同意后才能执行。** 包括但不限于：改代码、改 sdkconfig、改引脚、跑终端命令、编译、烧录、监视器、装组件、改 VS Code / 工程配置、提交 git。
+
+- 先说明打算做什么、为什么、有无变砖风险，等用户同意
+- 用户没说「可以 / 同意 / 做吧」之前，不要改文件、不要跑命令
+- 不要擅自扩大范围；只做这次被批准的那一步
+
+# 编译与工具链：VS Code + 乐鑫官方
+
+用户用 **VS Code + Espressif ESP-IDF 扩展** 打开工程、编译、烧录、看日志，不是用 Cursor 当主构建环境。
+
+- 不要擅自在终端里执行 `idf.py build` / `flash` / `monitor` / `menuconfig`，除非用户明确要求
+- 需要编译或下载时，告诉用户用 VS Code 里 ESP-IDF 的 Build / Flash / Monitor
+- 当前扩展配置：IDF 在 `D:/Espressif/frameworks/esp-idf-v5.5.4/`，口为 COM 口（USB-Serial-JTAG）
+- 工程配置、CMake、sdkconfig 的改动同样要先问再改，保证 VS Code 仍能直接打开编译
+
+# 组件：尽量用乐鑫官方
+
+优先使用：
+
+- ESP-IDF 自带组件（`driver`、`esp_timer`、`nvs_flash`、`esp_lcd` 等）
+- 乐鑫官方托管组件（Espressif Component Registry 上 `espressif/` 命名空间）
+- 本仓库已有的 `components/BSP`，不要无故换成第三方 BSP
+
+不要引入来路不明的第三方库、Arduino 封装、非官方 USB/显示/按键驱动。官方组件能覆盖的，就用官方的。确需第三方时，先列出替代方案并等用户同意。
