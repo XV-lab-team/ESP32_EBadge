@@ -41,7 +41,9 @@ esp_err_t lcd_fill_rect(int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_
 esp_err_t lcd_fill_color(uint8_t r, uint8_t g, uint8_t b);
 esp_err_t lcd_prepare_1wire(void);
 esp_err_t lcd_fill_1wire(uint8_t r, uint8_t g, uint8_t b);
+esp_err_t lcd_draw_rgb565(int x, int y, int w, int h, const uint16_t *rgb565_be);
 esp_err_t lcd_draw_rgb565_1wire(int y, int rows, const uint16_t *rgb565_be);
+esp_err_t lcd_draw_rgb565_1wire_area(int x, int y, int w, int h, const uint16_t *rgb565_be);
 esp_err_t lcd_draw_test_pattern(void);
 esp_lcd_panel_handle_t lcd_get_panel(void);
 

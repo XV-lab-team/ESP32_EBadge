@@ -1,0 +1,13 @@
+idf_component_register(
+    SRCS
+        "os_monitor.c"
+        "os_monitor_port.c"
+        "os_monitor_cmd.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        freertos
+        heap
+        driver
+        letter_shell
+)

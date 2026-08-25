@@ -102,7 +102,9 @@ static void io_virtual_handle_cmd(const vio_cmd_t *cmd)
     HAL_StatusTypeDef res = HAL_OK;
 
     if (cmd->type == VIO_CMD_GPIO_SET) {
-        if (cmd->id >= VIO_GPIO_NUM) {
+        /* Avoid uint8_t >= 0 (-Wtype-limits) when VIO_GPIO_NUM is 0. */
+        unsigned gpio_num = (unsigned)VIO_GPIO_NUM;
+        if ((unsigned)cmd->id >= gpio_num) {
             return;
         }
 

@@ -99,6 +99,7 @@ VS Code ESP-IDF：**Build → Flash → Monitor**（现用那个 COM，曾是 CO
 - `help` → `help` / `cls` / `hello` / `id`
 - `hello` → `hello letter-shell`
 - `id` → `board ok`
+- `ledplay` / `ledstop` → 播 SD 上 `LED/LED.CFG`，见 `docs/LED样式文件-给接手AI.md`
 
 胶水会丢掉 CRLF 里紧跟 CR 的 LF，避免命令执行两次。  
 日志和 shell 挤在同一条 COM 上，提示符里夹 `ESP_LOG` 正常。

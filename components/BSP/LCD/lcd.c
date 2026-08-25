@@ -21,8 +21,11 @@ static const char *TAG = "lcd";
 
 /* 每次最多 20 行一次 RAMWR，缓冲大小和 lcd.h 的 LCD_DRAW_ROWS_MAX 对齐 */
 #define LCD_FILL_LINES              LCD_DRAW_ROWS_MAX
-#define LCD_MAX_TRANSFER_SZ         (LCD_H_RES * 80 * LCD_FB_BYTES_PER_PIXEL)
+/* PSRAM 整帧不能直接 DMA：SPI 会再申请同等大小的内部 priv TX，259KB 会 ESP_ERR_NO_MEM */
+#define LCD_DMA_BOUNCE_ROWS         40
+#define LCD_MAX_TRANSFER_SZ         (LCD_H_RES * LCD_DMA_BOUNCE_ROWS * LCD_FB_BYTES_PER_PIXEL)
 #define LCD_COLOR_DMA_TIMEOUT_MS    1000
+#define LCD_COLOR_DMA_GRACE_MS      50
 
 #define LCD_BL_LEDC_TIMER           LEDC_TIMER_0
 #define LCD_BL_LEDC_MODE            LEDC_LOW_SPEED_MODE
@@ -31,6 +34,7 @@ static const char *TAG = "lcd";
 static esp_lcd_panel_io_handle_t s_io = NULL;
 static esp_lcd_panel_handle_t s_panel = NULL;
 static uint16_t *s_fill_buf = NULL;
+static uint16_t *s_dma_bounce = NULL;
 static SemaphoreHandle_t s_color_done = NULL;
 static bool s_ready = false;
 
@@ -182,13 +186,28 @@ static bool IRAM_ATTR lcd_on_color_trans_done(esp_lcd_panel_io_handle_t panel_io
     return high_task_wakeup == pdTRUE;
 }
 
+static void lcd_color_dma_drain(void)
+{
+    if (s_color_done == NULL) {
+        return;
+    }
+    while (xSemaphoreTake(s_color_done, 0) == pdTRUE) {
+    }
+}
+
 static esp_err_t lcd_wait_color_dma(void)
 {
-    if (xSemaphoreTake(s_color_done, pdMS_TO_TICKS(LCD_COLOR_DMA_TIMEOUT_MS)) != pdTRUE) {
-        ESP_LOGE(TAG, "等待像素 DMA 超时 (%d ms)", LCD_COLOR_DMA_TIMEOUT_MS);
-        return ESP_ERR_TIMEOUT;
+    if (xSemaphoreTake(s_color_done, pdMS_TO_TICKS(LCD_COLOR_DMA_TIMEOUT_MS)) == pdTRUE) {
+        return ESP_OK;
     }
-    return ESP_OK;
+    ESP_LOGE(TAG, "等待像素 DMA 超时 (%d ms)", LCD_COLOR_DMA_TIMEOUT_MS);
+    if (xSemaphoreTake(s_color_done, pdMS_TO_TICKS(LCD_COLOR_DMA_GRACE_MS)) == pdTRUE) {
+        ESP_LOGW(TAG, "像素 DMA 在宽限内完成");
+        return ESP_OK;
+    }
+    /* 迟到的 ISR give 不能当成下一帧完成，否则会边 DMA 边改 bounce。 */
+    lcd_color_dma_drain();
+    return ESP_ERR_TIMEOUT;
 }
 
 static uint32_t lcd_percent_to_duty(uint8_t percent)
@@ -378,6 +397,14 @@ esp_err_t lcd_init(void)
              (unsigned)(LCD_H_RES * LCD_FILL_LINES * LCD_FB_BYTES_PER_PIXEL),
              LCD_FILL_LINES, LCD_FB_BYTES_PER_PIXEL);
 
+    s_dma_bounce = heap_caps_malloc(LCD_MAX_TRANSFER_SZ, MALLOC_CAP_DMA);
+    if (s_dma_bounce == NULL) {
+        ESP_LOGE(TAG, "申请 DMA bounce 失败, 需要 %u 字节", (unsigned)LCD_MAX_TRANSFER_SZ);
+        return ESP_ERR_NO_MEM;
+    }
+    ESP_LOGI(TAG, "DMA bounce %u 字节 (%d 行), PSRAM 帧经此拷贝再 tx_color",
+             (unsigned)LCD_MAX_TRANSFER_SZ, LCD_DMA_BOUNCE_ROWS);
+
     s_ready = true;
     ESP_LOGI(TAG, "LCD 初始化完成");
     return ESP_OK;
@@ -453,6 +480,52 @@ esp_err_t lcd_fill_color(uint8_t r, uint8_t g, uint8_t b)
     return lcd_fill_rect(0, 0, LCD_H_RES, LCD_V_RES, r, g, b);
 }
 
+esp_err_t lcd_draw_rgb565(int x, int y, int w, int h, const uint16_t *rgb565_be)
+{
+    if (!s_ready || s_panel == NULL || s_dma_bounce == NULL) {
+        ESP_LOGE(TAG, "lcd_draw_rgb565: 尚未初始化");
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (rgb565_be == NULL || w <= 0 || h <= 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    /* 源缓冲按传入的 w 为行跨距；越界直接拒绝，避免裁剪后像素错位 */
+    if (x < 0 || y < 0 || x >= LCD_H_RES || y >= LCD_V_RES ||
+        x + w > LCD_H_RES || y + h > LCD_V_RES) {
+        ESP_LOGE(TAG, "lcd_draw_rgb565: 区域越界 (%d,%d) %dx%d", x, y, w, h);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    /* 源常在 PSRAM。SPI 对外部 RAM 会再 malloc 内部 priv TX，整帧 259KB 会失败。
+     * 拷到预申请的内部 DMA bounce 再 draw_bitmap；FULL 帧仍是先画完再连续刷。 */
+    const uint16_t *src = rgb565_be;
+    int y0 = y;
+    const int y1 = y + h;
+    while (y0 < y1) {
+        int rows = y1 - y0;
+        if (rows > LCD_DMA_BOUNCE_ROWS) {
+            rows = LCD_DMA_BOUNCE_ROWS;
+        }
+        const size_t pix = (size_t)w * (size_t)rows;
+        memcpy(s_dma_bounce, src, pix * LCD_FB_BYTES_PER_PIXEL);
+
+        esp_err_t err = esp_lcd_panel_draw_bitmap(s_panel, x, y0, x + w, y0 + rows, s_dma_bounce);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "lcd_draw_rgb565 draw_bitmap (%d,%d) %dx%d 失败: %s",
+                     x, y0, w, rows, esp_err_to_name(err));
+            return err;
+        }
+        err = lcd_wait_color_dma();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "lcd_draw_rgb565 (%d,%d) %dx%d DMA 未完成", x, y0, w, rows);
+            return err;
+        }
+        src += pix;
+        y0 += rows;
+    }
+    return ESP_OK;
+}
+
 esp_err_t lcd_prepare_1wire(void)
 {
     if (!s_ready || s_panel == NULL || s_io == NULL) {
@@ -515,6 +588,48 @@ esp_err_t lcd_draw_rgb565_1wire(int y, int rows, const uint16_t *rgb565_be)
     const size_t pix = (size_t)LCD_H_RES * (size_t)rows;
     memcpy(s_fill_buf, rgb565_be, pix * LCD_FB_BYTES_PER_PIXEL);
     return lcd_write_rows_1wire(y, rows);
+}
+
+esp_err_t lcd_draw_rgb565_1wire_area(int x, int y, int w, int h, const uint16_t *rgb565_be)
+{
+    if (!s_ready || s_io == NULL || s_fill_buf == NULL) {
+        ESP_LOGE(TAG, "lcd_draw_rgb565_1wire_area: 尚未初始化");
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (rgb565_be == NULL || w <= 0 || h <= 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    /* 源缓冲按传入的 w 为行跨距；越界直接拒绝，避免裁剪后像素错位 */
+    if (x < 0 || y < 0 || x >= LCD_H_RES || y >= LCD_V_RES ||
+        x + w > LCD_H_RES || y + h > LCD_V_RES) {
+        ESP_LOGE(TAG, "lcd_draw_rgb565_1wire_area: 区域越界 (%d,%d) %dx%d", x, y, w, h);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    const uint16_t *src = rgb565_be;
+    int y0 = y;
+    const int y1 = y + h;
+    while (y0 < y1) {
+        int rows = y1 - y0;
+        if (rows > LCD_FILL_LINES) {
+            rows = LCD_FILL_LINES;
+        }
+        const size_t pix = (size_t)w * (size_t)rows;
+        memcpy(s_fill_buf, src, pix * LCD_FB_BYTES_PER_PIXEL);
+        esp_err_t err = lcd_set_addr_win(x, y0, x + w - 1, y0 + rows - 1);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "lcd_draw_rgb565_1wire_area 设窗口失败: %s", esp_err_to_name(err));
+            return err;
+        }
+        err = lcd_write_ram_1wire(s_fill_buf, pix * LCD_FB_BYTES_PER_PIXEL);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "lcd_draw_rgb565_1wire_area RAMWR 失败: %s", esp_err_to_name(err));
+            return err;
+        }
+        src += pix;
+        y0 += rows;
+    }
+    return ESP_OK;
 }
 
 esp_err_t lcd_draw_test_pattern(void)
